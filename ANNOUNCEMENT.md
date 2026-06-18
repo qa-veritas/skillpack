@@ -1,35 +1,16 @@
-# LinkedIn announcement — skillpack
+# LinkedIn announcement — SkillPack
 
-If you give an agent every capability it might ever need in one system
-prompt, it gets worse at all of them. Context is a budget. Spend it on
-the task in front of you, not the 30 tasks that aren't.
+---
 
-`skillpack` is a tiny framework for progressive-disclosure skills:
+The instinct when giving an agent capability is to stuff every instruction it might need into one system prompt. That makes it worse at all of them. Context is a budget, and a prompt bloated with thirty procedures spends it on the twenty-nine that don't matter for the task in front of it. Capability that doesn't scale with the number of skills isn't capability — it's a ceiling.
 
-- **Level 1** — name + description, always loaded, ~100 tokens per
-  skill. This is all the agent sees at rest.
-- **Level 2** — the full `SKILL.md` instructions, loaded *only* when a
-  task matches the description.
-- **Level 3** — `scripts/` and `kb/` resources, loaded only when the
-  skill references them, and run via the shell so they never enter the
-  context window at all.
+SkillPack loads capability progressively, in three levels: ~100 tokens of metadata always available, the full instructions only when a task matches, and scripts or reference material only when the skill actually reaches for them. A skill carries *knowledge* — what to look at and what each signal means — not a fixed command list. The agent reasons; the skill informs. (A skill that hands a fixed command list is a script in costume.)
 
-A skill carries *knowledge, not a command list*: what a signal means,
-what inputs to expect, what a good answer looks like — then it lets the
-agent reason. Matching is deliberately transparent (token overlap over
-name + description + tags); the point isn't a clever ranker, it's that
-the agent only pays for the skills a task actually needs.
+The hundredth skill you add doesn't degrade the first ninety-nine, because nothing loads until a task invokes it.
 
-There's a smoke-check convention too: a cheap, read-only command that
-proves a skill's prerequisites work before an automated run relies on
-it.
+This is the **Skills** layer of QA Veritas — a platform exploring how AI agents reason about, verify, and operate complex systems. It's the connective tissue: the triage, verification, and diagnostic knowledge an agent applies, packaged as capability it loads on demand.
 
-It's ~300 lines of Python and a directory convention. The discipline is
-worth more than the code: self-contained, composable, filesystem-based
-skills you can review like any other artifact.
+Repo + write-up in the comments.
 
-Repo: github.com/qa-veritas/skillpack
-
-#aiengineering #agents #platformengineering #llm
-
-MIT licensed.
+---
+*First comment:* Repo: github.com/qa-veritas/skillpack · Platform: github.com/qa-veritas

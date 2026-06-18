@@ -1,124 +1,114 @@
-# skillpack
+# SkillPack
 
+> **Agent capability that loads only when the task needs it.**
+
+[![QA Veritas](https://img.shields.io/badge/QA_Veritas-AI--Native_Verification_Engineering-0b3d91)](https://github.com/qa-veritas)
+[![layer](https://img.shields.io/badge/layer-Skills-bf8700)](https://github.com/qa-veritas)
 [![ci](https://github.com/qa-veritas/skillpack/actions/workflows/ci.yml/badge.svg)](https://github.com/qa-veritas/skillpack/actions/workflows/ci.yml)
 
-**A tiny framework for progressive-disclosure agent skills: cheap
-metadata always, full instructions on match, heavy resources only when
-referenced.**
+*A component of [**QA Veritas**](https://github.com/qa-veritas) — an exploration of how AI agents reason about, verify, and operate complex systems.*
 
-Stuffing every capability an agent might need into one system prompt
-burns context and makes the agent worse at all of them. `skillpack`
-borrows the progressive-disclosure model: a skill exposes ~100 tokens of
-metadata that's always available, a full `SKILL.md` body that loads only
-when a task matches its description, and `scripts/` + `kb/` resources
-that load only when the skill references them.
+---
+
+## Problem
+
+The instinct when giving an agent capability is to stuff every instruction it *might* need into one system prompt. This makes the agent worse at all of them: context is a budget, and a prompt bloated with thirty procedures spends it on the twenty-nine that aren't relevant to the task in front of it. Capability that doesn't scale with the number of skills isn't capability — it's a ceiling.
+
+## Core Idea
+
+Load capability progressively, in three levels, paying only for what a task actually needs:
 
 ```
-Level 1  registry.yaml + SKILL.md frontmatter   always loaded   ~100 tokens/skill
-Level 2  SKILL.md body                            on match        < 5k tokens
-Level 3  scripts/, kb/                            on reference     unbounded (run via shell)
+Level 1  registry metadata (name + description)   always loaded     ~100 tokens/skill
+Level 2  the SKILL.md body                          on match          < 5k tokens
+Level 3  scripts/ and kb/ resources                 on reference      unbounded — run via shell
 ```
 
-A skill is **self-contained, composable, prompt-driven, and
-filesystem-based.** It carries knowledge, not a fixed command list.
+A skill is **self-contained, composable, prompt-driven, and filesystem-based.** It carries *knowledge* — what to look at, what each signal means — not a fixed command list. The agent reasons; the skill informs. Matching is deliberately transparent (token overlap over name + description + tags); the point isn't a clever ranker, it's that the agent only pays for the skills a task invokes.
 
-## Install
+## Architecture Diagram
 
-```bash
-pip install -e .
-python -m skillpack --help
+```mermaid
+flowchart TD
+    T[Task arrives] --> M[Match against<br/>Level 1 metadata]
+    M -->|always loaded, cheap| REG[(registry.yaml)]
+    M --> SEL{relevant skills}
+    SEL --> L2[Load SKILL.md body<br/>Level 2 — on match]
+    L2 --> AGENT[Agent reasons<br/>with the knowledge]
+    AGENT -->|only if referenced| L3[Run scripts / read kb<br/>Level 3 — via shell]
 ```
 
-Python 3.10+. Runtime dependency: `pyyaml`.
+## Concepts
 
-## Use
+- **Progressive disclosure** — three loading levels keep the context budget spent on the task, not the catalog.
+- **Knowledge, not command lists** — a skill says *what matters and why*; the agent decides *how*. (A skill that hands a fixed command list is a script in costume.)
+- **Composability** — skills reference each other (cluster-health pulls disk-pressure); composition is the test of whether a skill is real.
+- **Smoke-checkable** — a skill can ship a cheap `scripts/smoke.sh` that proves its preconditions before the agent relies on it.
 
-```bash
-# Level 1 — list available skills (metadata only)
-python -m skillpack list
+## Examples
 
-# Match a task to the skills that should load
-python -m skillpack match "the data mount is filling up, will it run out tonight"
-
-# Level 2 — load one skill's full instructions
-python -m skillpack show check_disk_pressure
-
-# Level 3 — run a skill's smoke check (if it ships one)
-python -m skillpack smoke check_disk_pressure
-
-# Validate the registry: every listed skill has a well-formed SKILL.md
-python -m skillpack validate
-```
-
-### Example: matching
+Matching a task to the skills that should load — transparent and cheap:
 
 ```
 $ python -m skillpack match "the data mount is filling up, will it run out tonight"
-1. check_disk_pressure   score 0.42   Decide whether storage is under pressure...
-2. analyze_cluster_health score 0.11  Turn a cluster health snapshot into a verdict...
+1. check_disk_pressure    score 0.42   Decide whether storage is under pressure...
+2. analyze_cluster_health score 0.11   Turn a cluster health snapshot into a verdict...
 ```
 
-Matching is deliberately simple and transparent (token overlap over
-name + description + tags). The point isn't a clever ranker; it's that
-the agent only pays the token cost of the skills a task actually needs.
+Eight skills ship as worked examples, spanning the platform's reasoning surface: disk pressure, log summarization, cluster health, failure explanation, resource-leak detection, triage planning, verification strategy, and root-cause identification.
 
-## Authoring a skill
+## Quick Start
 
-```
-skills/<name>/
-  SKILL.md            # YAML frontmatter (name, description) + body
-  scripts/smoke.sh    # optional: a cheap read that proves the skill works
-  kb/<ref>.md         # optional: reference material loaded on demand
-```
+```bash
+pip install -e .          # or: python -m skillpack --help
 
-`SKILL.md` frontmatter:
-
-```yaml
----
-name: check_disk_pressure
-description: >-
-  Decide whether a node's storage is under pressure and recommend an
-  action. Use when a mount is filling or capacity planning needs a verdict.
-tags: [storage, capacity, triage]
----
+python -m skillpack list                                    # Level 1: metadata only
+python -m skillpack match "mount filling up, will it run out tonight"   # task → skills
+python -m skillpack show check_disk_pressure                # Level 2: full instructions
+python -m skillpack validate                                # every skill well-formed?
 ```
 
-Then register it in `registry.yaml`. See the eight bundled skills
-(disk pressure, log summarization, cluster health, failure explanation,
-resource-leak detection, triage planning, verification strategy, and
-root-cause identification) for the conventions.
+Python 3.10+. One dependency (`pyyaml`).
 
-## Layout
+## Why It Matters
 
-```
-skillpack/
-  skillpack/
-    __init__.py
-    registry.py    # Level 1: load + validate registry.yaml
-    loader.py      # Level 2: parse SKILL.md frontmatter + body
-    match.py       # task -> ranked skills (transparent token overlap)
-    smoke.py       # Level 3: run a skill's smoke script
-    cli.py         # list / match / show / smoke / validate
-  skills/
-    check_disk_pressure/
-    summarize_logs/
-    analyze_cluster_health/
-  registry.yaml
-  tests/
-  LICENSE
-  pyproject.toml
-```
+For **engineers**: a growing library of capability stays navigable and cheap. Adding the hundredth skill doesn't degrade the first ninety-nine, because nothing loads until a task matches it.
 
-## Roadmap
+For **AI agents**: this is how agentic capability *scales*. It's the mechanism behind the platform's other components — the triage, verification, and diagnostic knowledge an agent applies is packaged as skills it loads on demand. It is the connective tissue between [State Triage](https://github.com/qa-veritas/state-triage)'s reasoning and the future agents that will compose it.
 
-- Pluggable matchers (embedding-based) behind the same interface, so the
-  token-overlap default can be swapped without touching callers.
-- A `bundle` command to export the matched skills as a single context
-  payload for a headless agent run.
-- Skill dependency edges (`composes_with`) surfaced in `match` so a
-  matched skill pulls its collaborators.
+## Future Vision
+
+- Pluggable matchers (embedding-based) behind the same interface, swappable without touching callers.
+- A `bundle` command to export matched skills as one context payload for a headless run.
+- Skill dependency edges (`composes_with`) surfaced in `match` so a matched skill pulls its collaborators.
 - Per-skill versioning and a `diff` against the installed set.
 
-## License
+---
 
-MIT. See [LICENSE](LICENSE).
+## Part of QA Veritas
+
+**QA Veritas** explores *AI-Native Verification Engineering* — practical patterns for a future where humans and AI agents operate complex systems together. Every component serves one loop:
+
+**Memory → Reasoning → Verification → Action**
+
+```
+QA Veritas
+├── Resource Ledger                    Memory       operational truth as a git tree
+├── State Triage                       Reasoning    deterministic triage around an agent
+├── LogLens                            Reasoning    code-aware evidence from logs
+├── Intent Verify                      Verification declarative intent → observable proof
+├── Runbook Forge                      Runbooks     procedures derived from verified history
+├── SkillPack         ◀ you are here   Skills       progressive-disclosure agent capability
+└── Future Agents                      Agents       narrow operators that compose the above
+```
+
+| Layer | Component |
+|-------|-----------|
+| Memory | [Resource Ledger](https://github.com/qa-veritas/resource-ledger) |
+| Reasoning | [State Triage](https://github.com/qa-veritas/state-triage) · [LogLens](https://github.com/qa-veritas/loglens) |
+| Verification | [Intent Verify](https://github.com/qa-veritas/intent-verify) |
+| Runbooks | [Runbook Forge](https://github.com/qa-veritas/runbook-forge) |
+| **Skills** | **SkillPack** (this repo) |
+| Writing | [Field notes & essays](https://github.com/qa-veritas/writing) |
+
+Start at the [platform overview](https://github.com/qa-veritas). MIT licensed.
