@@ -1,5 +1,7 @@
 # skillpack
 
+[![ci](https://github.com/qa-veritas/skillpack/actions/workflows/ci.yml/badge.svg)](https://github.com/qa-veritas/skillpack/actions/workflows/ci.yml)
+
 **A tiny framework for progressive-disclosure agent skills: cheap
 metadata always, full instructions on match, heavy resources only when
 referenced.**
