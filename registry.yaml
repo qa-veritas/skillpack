@@ -1,0 +1,29 @@
+# Level 1 metadata. Always loaded; ~100 tokens per skill.
+# Full instructions live in each skill's SKILL.md and load on match.
+skills:
+  - name: check_disk_pressure
+    path: skills/check_disk_pressure
+    description: >-
+      Decide whether a node's storage is under pressure and recommend an
+      action. Use when a mount is filling, a workload reports
+      no-space-left, or capacity planning needs a verdict.
+    enabled: true
+    tags: [storage, disk, capacity, pressure, triage]
+
+  - name: summarize_logs
+    path: skills/summarize_logs
+    description: >-
+      Compress a log slice into a timeline, clustered errors, and a
+      one-paragraph summary. Never read a multi-GB log end to end. Use
+      to make a large log tractable.
+    enabled: true
+    tags: [logs, summary, timeline, triage, observability]
+
+  - name: analyze_cluster_health
+    path: skills/analyze_cluster_health
+    description: >-
+      Turn a cluster health snapshot into a verdict, degraded
+      components, and the next checks worth running. Use for health
+      questions and pre/post-change checks.
+    enabled: true
+    tags: [cluster, health, nodes, quorum, triage]
