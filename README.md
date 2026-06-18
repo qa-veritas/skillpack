@@ -83,8 +83,10 @@ tags: [storage, capacity, triage]
 ---
 ```
 
-Then register it in `registry.yaml`. See the three bundled example
-skills.
+Then register it in `registry.yaml`. See the eight bundled skills
+(disk pressure, log summarization, cluster health, failure explanation,
+resource-leak detection, triage planning, verification strategy, and
+root-cause identification) for the conventions.
 
 ## Layout
 

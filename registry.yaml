@@ -27,3 +27,48 @@ skills:
       questions and pre/post-change checks.
     enabled: true
     tags: [cluster, health, nodes, quorum, triage]
+
+  - name: explain_failure
+    path: skills/explain_failure
+    description: >-
+      Translate an error signature plus surrounding log and code context
+      into a plain-language explanation and a likely cause class. Use
+      when an error message is cryptic or being handed off.
+    enabled: true
+    tags: [error, logs, explanation, triage, rca]
+
+  - name: detect_resource_leak
+    path: skills/detect_resource_leak
+    description: >-
+      Spot monotonic growth in a resource (memory, file descriptors,
+      disk, threads) across snapshots and attribute it to an owner. Use
+      for slow degradations and OOM-after-hours symptoms.
+    enabled: true
+    tags: [memory, leak, fd, disk, degradation, observability]
+
+  - name: generate_triage_plan
+    path: skills/generate_triage_plan
+    description: >-
+      Produce an ordered investigation plan from a failure
+      classification and available evidence, with explicit stop
+      conditions. Use at the start of any non-trivial failure.
+    enabled: true
+    tags: [triage, plan, investigation, rca]
+
+  - name: create_verification_strategy
+    path: skills/create_verification_strategy
+    description: >-
+      Given an intended change, define the pre-check, the observable
+      post-checks that prove it worked, and the rollback signal. Use
+      before applying any change to a live resource.
+    enabled: true
+    tags: [verification, change, rollback, precheck, postcheck]
+
+  - name: identify_root_cause
+    path: skills/identify_root_cause
+    description: >-
+      From all collected findings, pick the single most-likely root
+      cause with a confidence level, the supporting evidence, and the
+      cheapest test that would falsify it. Use as the synthesis step.
+    enabled: true
+    tags: [rca, root-cause, synthesis, triage, confidence]
